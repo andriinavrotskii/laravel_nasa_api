@@ -3,36 +3,27 @@
 namespace App\ExternalApi;
 
 use GuzzleHttp\Client as Guzzle;
-use GuzzleHttp\Exception\ClientException;
-use Illuminate\Support\Carbon;
+use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Response as GuzzleResponse;
-use App\Model\Neo;
+use Illuminate\Support\Carbon;
+use App\Exceptions\NasaException;
+
 
 class Nasa
 {
-    protected const API_KEY = 'N7LkblDsc5aen05FJqBQ8wU4qSdmsftwJagVK7UD';
+    protected $periodDays = 2; //days before, except tooday
 
-    protected $log = [
-        'count' => 0,
-        'new' => 0
-    ];
-
-
-    public function updateNeo()
+    public function getNeo()
     {
         $url = 'https://api.nasa.gov/neo/rest/v1/feed?'
-                . 'start_date=' . (new Carbon('tomorrow'))->subDays(3)->toDateString()
+                . 'start_date=' . (new Carbon('tomorrow'))->subDays($this->periodDays)->toDateString()
                 . '&end_date=' . (new Carbon('tomorrow'))->toDateString()
                 . '&detailed=false'
-                . '&api_key=' . self::API_KEY;
+                . '&api_key=' . env("NASA_API_KEY");
 
-        $this->saveToDb($this->apiRequest($url));
-    }
+        return $this->checkAndReturnResponse($this->apiRequest($url));
 
-
-    public function getLog()
-    {
-        return $this->log;
+        //return json_decode((string) $response->getBody())->near_earth_objects;
     }
 
 
@@ -40,35 +31,42 @@ class Nasa
     {
         try {
             $client = new Guzzle;
-            return $client->request('GET', $url);
-        } catch (ClientException $e) {
-            dd($e->getMessage());
-        }
-    }
+            $response = $client->request('GET', $url);
 
-
-    protected function saveToDb(GuzzleResponse $response)
-    {
-        $data = json_decode((string) $response->getBody())->near_earth_objects;
-
-        foreach ($data as $date => $dayData) {
-            foreach ($dayData as $neoData) {
-                $neoData = [
-                    'date' => $date,
-                    'reference' => $neoData->neo_reference_id,
-                    'name' => $neoData->name,
-                    'speed' => $neoData->close_approach_data[0]->relative_velocity->kilometers_per_hour,
-                    'is_hazardous' => $neoData->is_potentially_hazardous_asteroid,
-                ];
-
-                $neo = Neo::firstOrCreate($neoData);
-
-                $this->log['count']++;
-
-                if($neo->wasRecentlyCreated) {
-                    $this->log['new']++;
-                }
+            if ($response->getStatusCode() !== 200) {
+                throw new NasaException("NASA API error: Status code " . $response->getStatusCode());    
             }
+
+            return $response;
+
+        } catch (RequestException $e) {
+            throw new NasaException("NASA API error: " . $e->getMessage());
         }
     }
+
+
+    protected function checkAndReturnResponse(GuzzleResponse $response)
+    {
+        if (!$response->getBody()) {
+            throw new NasaException("NASA API error: Response body is empty");  
+        }
+
+        $response = json_decode((string) $response->getBody());
+
+        if (!property_exists($response, "near_earth_objects")) {
+            throw new NasaException("NASA API error: near_earth_objects not found in response");  
+        }
+
+        $response = (array) $response->near_earth_objects;
+
+        if (count($response) !== $this->periodDays+1) {
+            throw new NasaException("NASA API error: near_earth_objects not valid");  
+        }
+
+        return $response;
+
+    }
+
+
+
 }
