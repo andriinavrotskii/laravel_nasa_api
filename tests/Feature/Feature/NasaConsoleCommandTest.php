@@ -2,18 +2,20 @@
 
 namespace Tests\Feature\Feature;
 
+use App\Model\Neo;
+use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class NasaConsoleCommandTest extends TestCase
 {
-    /**
-     * A basic test example.
-     *
-     * @return void
-     */
-    public function testExample()
+    use RefreshDatabase;
+
+    public function testCommand()
     {
-        $this->assertTrue(true);
+        Artisan::call('update:nasa');
+        $output = Artisan::output();
+        $this->assertRegExp('/Imported [1-9]+ NEOs. [1-9]+ of them is new\n/i', $output);
+        $this->assertTrue((Neo::count()) > 0);
     }
 }
