@@ -7,7 +7,7 @@ use Illuminate\Database\QueryException;
 use App\ExternalApi\Nasa;
 use App\Model\Neo;
 use App\Exceptions\NasaException;
-use App\Http\Service\NasaDataUpdater;
+use App\Service\NasaDataUpdater;
 
 
 

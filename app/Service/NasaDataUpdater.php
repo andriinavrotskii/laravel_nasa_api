@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Service;
+namespace App\Service;
 
 use App\Model\Neo;
 use App\Exceptions\NasaException;
