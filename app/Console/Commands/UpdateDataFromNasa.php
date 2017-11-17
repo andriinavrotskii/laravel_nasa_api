@@ -27,6 +27,19 @@ class UpdateDataFromNasa extends Command
     protected $description = 'Update data in DB from NASA API';
 
     /**
+     * Couter for NEOs data
+     *
+     * @var int
+     */
+    protected $countAll;
+
+    /**
+     * Counter for NEOs data saved in DB
+     * @var int
+     */
+    protected $countNew;
+
+    /**
      * Create a new command instance.
      *
      * @return void
@@ -34,64 +47,71 @@ class UpdateDataFromNasa extends Command
     public function __construct()
     {
         parent::__construct();
+        $this->countAll = 0;
+        $this->countNew = 0;
     }
 
     /**
      * Execute the console command.
      *
-     * @return mixed
+     * @return void
      */
     public function handle()
     {
         try {
             $data = (new Nasa())->getNeo();
-            $this->saveToDb($data);
+            $this->trougthNasaData($data);
+            $this->info("Imported {$this->countAll} NEOs. {$this->countNew} of them is new");
         } catch (NasaException $e) {
             dd($e->getMessage());
         }
-
     }
 
 
-    protected function saveToDb($data)
+    /**
+     * @param array $data
+     * @throws NasaException
+     * @return void
+     */
+    protected function trougthNasaData(array $data)
     {
-        $count = 0;
-        $new = 0;
         if (!is_array($data)) {
             throw new NasaException("Error: Data is not valid.");
         }
 
-        foreach ($data as $date => $dayData) {
-            if (!is_array($data)) {
-                throw new NasaException("Error: Data is not valid.");
-            }
-            foreach ($dayData as $neoData) {
-                try {
-                    $neoData = [
+        try {
+            foreach ($data as $date => $dayData) {
+                foreach ($dayData as $neoData) {
+                    $this->saveToDbAndCount([
                         'date' => $date,
                         'reference' => $neoData->neo_reference_id,
                         'name' => $neoData->name,
                         'speed' => $neoData->close_approach_data[0]->relative_velocity->kilometers_per_hour,
                         'is_hazardous' => $neoData->is_potentially_hazardous_asteroid,
-                    ];
-                } catch (\Throwable $e) {
-                    throw new NasaException("Error: Data is not valid. " . $e->getMessage()); 
-                }
-
-                try {
-                    $neo = Neo::firstOrCreate($neoData);   
-                } catch (QueryException $e) {
-                    throw new NasaException("Error: Update DB" . $e->getMessage()); 
-                }
-
-
-                $count++;
-                if($neo->wasRecentlyCreated) {
-                    $new++;
+                    ]);
                 }
             }
+        } catch (\Throwable $e) {
+            throw new NasaException("Error: NASA Data is not valid. " . $e->getMessage());
         }
+    }
 
-        $this->info("Imported {$count} NEOs. {$new} of them is new");
+    /**
+     * @param array $neoData
+     * @throws NasaException
+     * @return void
+     */
+    protected function saveToDbAndCount(array $neoData)
+    {
+        try {
+            $neo = Neo::firstOrCreate($neoData);
+
+            $this->countAll++;
+            if($neo->wasRecentlyCreated) {
+                $this->countNew++;
+            }
+        } catch (QueryException $e) {
+            throw new NasaException("Error: Update DB" . $e->getMessage());
+        }
     }
 }
