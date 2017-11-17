@@ -21,34 +21,20 @@ class NasaDataUpdater
     protected $countNew;
 
     /**
-     * @var array
+     * @param array $data
+     * @return array
      */
-    protected $data;
-
-    /**
-     * @return void
-     */
-    public function __construct(array $data)
+    public function update(array $data)
     {
         $this->countAll = 0;
         $this->countNew = 0;
+
         $this->goTrougthNasaData($data);
-    }
 
-    /**
-     * @return int
-     */
-    public function getCountAll()
-    {
-        return $this->countAll;
-    }
-
-    /**
-     * @return int
-     */
-    public function getCountNew()
-    {
-        return $this->countNew;
+        return [
+            'new' => $this->countNew,
+            'all' => $this->countAll,
+        ];
     }
 
     /**

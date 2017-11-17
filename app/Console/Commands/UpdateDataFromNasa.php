@@ -46,10 +46,10 @@ class UpdateDataFromNasa extends Command
     {
         try {
             $data = (new Nasa())->getNeo();
-            $dataUpdater = new NasaDataUpdater($data);
+            $result = (new NasaDataUpdater())->update($data);
             $this->info(
-                "Imported {$dataUpdater->getCountAll()} NEOs."
-                . " {$dataUpdater->getCountNew()} of them is new"
+                "Imported {$result['all']} NEOs."
+                . " {$result['new']} of them is new"
             );
         } catch (NasaException $e) {
             $this->info($e->getMessage());
