@@ -13,7 +13,7 @@ class NasaConsoleCommandTest extends TestCase
 
     public function testCommand()
     {
-        Artisan::call('update:nasa');
+        Artisan::call('nasa:update');
         $output = Artisan::output();
         $this->assertRegExp('/Imported [1-9]+ NEOs. [1-9]+ of them is new\n/i', $output);
         $this->assertTrue((Neo::count()) > 0);

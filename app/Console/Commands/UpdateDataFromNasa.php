@@ -18,7 +18,7 @@ class UpdateDataFromNasa extends Command
      *
      * @var string
      */
-    protected $signature = 'update:nasa';
+    protected $signature = 'nasa:update';
 
     /**
      * The console command description.
