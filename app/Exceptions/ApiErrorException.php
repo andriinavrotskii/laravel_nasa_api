@@ -16,6 +16,6 @@ class ApiErrorException extends Exception
     {
         return response()->json([
             'error' => 'Something wrong with API',
-        ], 200);
+        ], 400);
     }
 }

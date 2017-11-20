@@ -55,7 +55,7 @@ class ApiTest extends TestCase
                 ],
                 'count',
             ]);
-        
+
         $this->assertEquals($response->getData()->count, 2);
         $this->assertEquals(count($response->getData()->data), 2);
 
