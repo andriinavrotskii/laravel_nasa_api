@@ -2,7 +2,7 @@ TASK:
 ====
 
 
-# Basic Symfony Backend Developer Interview
+# Basic Laravel Backend Developer Interview
 
 Dear candidate, please follow this readme and solve all questions.
 
